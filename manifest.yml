@@ -1,18 +1,34 @@
 modules:
   jira:issuePanel:
-    - key: decision-ledger-hello-world-issue-panel
+    - key: decision-ledger-panel
       resource: main
       resolver:
         function: resolver
       render: native
-      title: decision-ledger
+      title: Decision Ledger
       icon: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+  trigger:
+    - key: decision-from-comment
+      function: on-comment
+      events:
+        - avi:jira:commented:issue
+      filter:
+        ignoreSelf: true
   function:
     - key: resolver
       handler: index.handler
+    - key: on-comment
+      handler: triggers.onComment
+  sql:
+    - key: main
+      engine: mysql
 resources:
   - key: main
     path: src/frontend/index.jsx
+permissions:
+  scopes:
+    - read:jira-work
+    - write:jira-work
 app:
   runtime:
     name: nodejs24.x
