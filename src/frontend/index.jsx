@@ -11,6 +11,13 @@ const day = (iso) => String(iso).slice(0, 10);
 const sourceUrl = (d) => `/browse/${d.sourceIssue}?focusedCommentId=${d.sourceComment}`;
 
 function Conflict({ d }) {
+  if (d.restricted) {
+    return (
+      <SectionMessage appearance="warning" title={`Conflicts with ${d.id}`}>
+        <Text>This decision was made on a work item you cannot open. Ask its project's team before going ahead.</Text>
+      </SectionMessage>
+    );
+  }
   return (
     <SectionMessage appearance="warning" title={`Conflicts with ${d.id}, in force since ${day(d.createdAt)}`}>
       <Stack space="space.075">

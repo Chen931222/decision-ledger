@@ -107,3 +107,17 @@ describe("adfToText", () => {
     expect(parseDecision(adfToText(doc))).toMatchObject({ statement: "Use PostgreSQL", avoid: ["MongoDB"], scope: { components: ["backend"] } });
   });
 });
+
+import { checkSupersede } from "../src/ledger/match.js";
+
+describe("checkSupersede", () => {
+  const rows = chainOf([base(1), base(2, { supersedes: "DL-1" }), base(3, { projectKey: "WEB" })]);
+  it("allows superseding a decision in force in the same project", () => {
+    expect(checkSupersede(rows, "DL-2", "PAY")).toEqual({ ok: true });
+  });
+  it("refuses another project's decision, a missing one, and an already superseded one", () => {
+    expect(checkSupersede(rows, "DL-3", "PAY").ok).toBe(false);
+    expect(checkSupersede(rows, "DL-9", "PAY").ok).toBe(false);
+    expect(checkSupersede(rows, "DL-1", "PAY").reason).toMatch(/already superseded/);
+  });
+});

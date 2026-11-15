@@ -10,7 +10,7 @@ import api, { route } from "@forge/api";
 import { adfToText } from "./ledger/adf.js";
 import { parseDecision } from "./ledger/parse.js";
 import { allRows, append } from "./ledger/store.js";
-import { inForce } from "./ledger/match.js";
+import { checkSupersede } from "./ledger/match.js";
 
 /** Plain-text reply in Atlassian Document Format. */
 function adfParagraphs(lines) {
@@ -43,6 +43,10 @@ export async function onComment(event) {
     return;
   }
   const comment = await res.json();
+  // A comment restricted to a role or group (or an internal note in Jira Service Management) is not
+  // recorded: the ledger and its unrestricted reply would show its content to everyone who can see
+  // the work item.
+  if (comment.visibility || comment.jsdPublic === false) return;
   const parsed = parseDecision(adfToText(comment.body));
   if (!parsed) return;
 
@@ -50,13 +54,10 @@ export async function onComment(event) {
   const rows = await allRows();
   let note = null;
   if (parsed.supersedes) {
-    // Only a decision that exists and is still in force can be superseded.
-    const target = rows.find((r) => r.id === parsed.supersedes);
-    if (!target) {
-      note = `Supersedes ${parsed.supersedes} was ignored: there is no such decision.`;
-      parsed.supersedes = null;
-    } else if (!inForce(rows).some((r) => r.id === target.id)) {
-      note = `Supersedes ${parsed.supersedes} was ignored: it was already superseded.`;
+    // Only a decision in force in the same project can be superseded from here.
+    const check = checkSupersede(rows, parsed.supersedes, projectKey);
+    if (!check.ok) {
+      note = `Supersedes ${parsed.supersedes} was ignored: ${check.reason}.`;
       parsed.supersedes = null;
     }
   }

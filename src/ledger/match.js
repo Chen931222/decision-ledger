@@ -49,3 +49,17 @@ export function conflicts(rows, item) {
   }
   return out;
 }
+
+/**
+ * Whether `supersedes` (e.g. "DL-3") may be superseded from a comment in `projectKey`.
+ * Only a decision that exists, is still in force, and belongs to the same project qualifies:
+ * a comment in one project must not switch off another project's decisions.
+ * @returns {{ok: true} | {ok: false, reason: string}}
+ */
+export function checkSupersede(rows, supersedes, projectKey) {
+  const target = rows.find((r) => r.id === supersedes);
+  if (!target) return { ok: false, reason: `there is no decision ${supersedes}` };
+  if (target.projectKey !== projectKey) return { ok: false, reason: `${supersedes} belongs to another project` };
+  if (!inForce(rows).some((r) => r.id === target.id)) return { ok: false, reason: `${supersedes} was already superseded` };
+  return { ok: true };
+}
