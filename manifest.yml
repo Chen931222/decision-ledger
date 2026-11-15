@@ -1,0 +1,21 @@
+modules:
+  jira:issuePanel:
+    - key: decision-ledger-hello-world-issue-panel
+      resource: main
+      resolver:
+        function: resolver
+      render: native
+      title: decision-ledger
+      icon: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+  function:
+    - key: resolver
+      handler: index.handler
+resources:
+  - key: main
+    path: src/frontend/index.jsx
+app:
+  runtime:
+    name: nodejs24.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/3700daed-8bb8-4b19-9ef0-7952da4090ee
