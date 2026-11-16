@@ -21,6 +21,10 @@ As the person using it: work items, projects and permissions, to decide what tha
 
 A reply comment with the recorded id, after a decision comment. When someone presses "Load demo" in a project where they may create work items and comment: three work items titled `[Decision Ledger demo]` and two decision comments.
 
+## Logs
+
+When "Load demo" fails, the app writes one log line with the step that failed and the error message. Logs go to Atlassian's Forge logging, which the developer can read to fix problems. They contain no names or account ids. Site admins can turn off the developer's log access, or view and download the logs, at admin.atlassian.com.
+
 ## Deleting data
 
 Records cannot be edited or deleted from inside the app; that is what makes the ledger trustworthy. Uninstalling the app removes its Forge storage according to Atlassian's data retention for Forge apps.
