@@ -14,6 +14,45 @@ modules:
         function: page-resolver
       render: native
       title: Decision Ledger
+  rovo:agent:
+    - key: decision-ledger-agent
+      name: Decision Ledger
+      description: Answers questions about the team's recorded decisions, from the Decision Ledger.
+      prompt: resource:agent-prompt;prompt.md
+      conversationStarters:
+        - Is DL-3 still in force?
+        - Can PAY cache refund sessions in MongoDB?
+      actions:
+        - explain-decision
+        - check-proposal
+  action:
+    - key: explain-decision
+      name: Explain a decision
+      function: rovo-explain
+      actionVerb: GET
+      description: Look up one recorded decision by its id (like DL-3) and say whether it is still in force or what superseded it.
+      inputs:
+        decisionId:
+          title: Decision id
+          type: string
+          required: true
+          description: The decision id, for example DL-3.
+    - key: check-proposal
+      name: Check a proposal against decisions
+      function: rovo-check
+      actionVerb: GET
+      description: Check whether a proposed piece of work in a Jira project conflicts with any decision still in force there.
+      inputs:
+        projectKey:
+          title: Project key
+          type: string
+          required: true
+          description: The Jira project key, for example PAY.
+        proposal:
+          title: Proposal
+          type: string
+          required: true
+          description: A short description of the proposed work.
   trigger:
     - key: decision-from-comment
       function: on-comment
@@ -28,6 +67,10 @@ modules:
       handler: triggers.onComment
     - key: page-resolver
       handler: page-resolver.handler
+    - key: rovo-explain
+      handler: rovo.explainDecision
+    - key: rovo-check
+      handler: rovo.checkProposal
   sql:
     - key: main
       engine: mysql
@@ -36,6 +79,8 @@ resources:
     path: src/frontend/index.jsx
   - key: page
     path: src/frontend/page.jsx
+  - key: agent-prompt
+    path: src/prompts
 permissions:
   scopes:
     - read:jira-work
