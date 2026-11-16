@@ -7,6 +7,13 @@ modules:
       render: native
       title: Decision Ledger
       icon: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+  jira:globalPage:
+    - key: decision-ledger-page
+      resource: page
+      resolver:
+        function: page-resolver
+      render: native
+      title: Decision Ledger
   trigger:
     - key: decision-from-comment
       function: on-comment
@@ -19,12 +26,16 @@ modules:
       handler: index.handler
     - key: on-comment
       handler: triggers.onComment
+    - key: page-resolver
+      handler: page-resolver.handler
   sql:
     - key: main
       engine: mysql
 resources:
   - key: main
     path: src/frontend/index.jsx
+  - key: page
+    path: src/frontend/page.jsx
 permissions:
   scopes:
     - read:jira-work
