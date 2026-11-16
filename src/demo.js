@@ -35,10 +35,13 @@ async function call(as, path, method = "GET", body) {
   return { ok: res.ok, status: res.status, json: text ? JSON.parse(text) : null };
 }
 
-/** Projects the user can browse, for the picker. */
+/**
+ * Projects the user can browse, for the picker. Jira Product Discovery projects are left out: their
+ * idea view does not show issue panels, so the conflict warning would never appear there.
+ */
 export async function listProjects() {
   const res = await call(api.asUser(), route`/rest/api/3/project/search?maxResults=50`);
-  return (res.json?.values ?? []).map((p) => ({ key: p.key, name: p.name }));
+  return (res.json?.values ?? []).filter((p) => p.projectTypeKey !== "product_discovery").map((p) => ({ key: p.key, name: p.name }));
 }
 
 /** Checks, as the user, that they may create work items and comment in the project. */
@@ -85,8 +88,22 @@ async function decide(projectKey, issueKey, text, accountId) {
 
 export async function loadDemo(projectKey, accountId) {
   if (!projectKey) throw new Error("Pick a project first.");
-  if (!(await userMayWrite(projectKey))) throw new Error(`You need permission to create work items and comment in ${projectKey}.`);
-  const typeId = await taskTypeId(projectKey);
+  let step = "checking your permissions";
+  try {
+    if (!(await userMayWrite(projectKey))) throw new Error(`You need permission to create work items and comment in ${projectKey}.`);
+    step = "reading work item types";
+    const typeId = await taskTypeId(projectKey);
+    step = "creating demo work items";
+    return await createDemo(projectKey, typeId, accountId);
+  } catch (err) {
+    console.error(`loadDemo failed while ${step}:`, err?.name, err?.message ?? err);
+    if (!(err instanceof Error)) throw new Error(`${err} (while ${step})`);
+    err.message = `${err.message} (while ${step})`;
+    throw err;
+  }
+}
+
+async function createDemo(projectKey, typeId, accountId) {
 
   // First the team picks MongoDB.
   const first = await createIssue(projectKey, typeId, "Pick a datastore for the payments ledger", "Payment events need to be stored and replayed.");
