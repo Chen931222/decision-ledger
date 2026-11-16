@@ -68,7 +68,7 @@ async function createIssue(projectKey, typeId, summary, description) {
 }
 
 /** Posts a decision comment (as the app, marked as demo) and records it in the ledger now. */
-async function decide(projectKey, issueKey, text, accountId) {
+async function decide(projectKey, issueKey, text) {
   const res = await call(api.asApp(), route`/rest/api/3/issue/${issueKey}/comment`, "POST", { body: doc(text) });
   if (!res.ok) throw new Error(`Could not comment on ${issueKey} (${res.status}).`);
   const parsed = parseDecision(text);
@@ -81,12 +81,11 @@ async function decide(projectKey, issueKey, text, accountId) {
     supersedes: parsed.supersedes,
     sourceIssue: issueKey,
     sourceComment: String(res.json.id),
-    author: accountId,
     createdAt: res.json.created ?? new Date().toISOString(),
   });
 }
 
-export async function loadDemo(projectKey, accountId) {
+export async function loadDemo(projectKey) {
   if (!projectKey) throw new Error("Pick a project first.");
   let step = "checking your permissions";
   try {
@@ -94,7 +93,7 @@ export async function loadDemo(projectKey, accountId) {
     step = "reading work item types";
     const typeId = await taskTypeId(projectKey);
     step = "creating demo work items";
-    return await createDemo(projectKey, typeId, accountId);
+    return await createDemo(projectKey, typeId);
   } catch (err) {
     console.error(`loadDemo failed while ${step}:`, err?.name, err?.message ?? err);
     if (!(err instanceof Error)) throw new Error(`${err} (while ${step})`);
@@ -103,12 +102,12 @@ export async function loadDemo(projectKey, accountId) {
   }
 }
 
-async function createDemo(projectKey, typeId, accountId) {
+async function createDemo(projectKey, typeId) {
 
   // First the team picks MongoDB.
   const first = await createIssue(projectKey, typeId, "Pick a datastore for the payments ledger", "Payment events need to be stored and replayed.");
   const d1 = await decide(projectKey, first, `Decision: Use MongoDB for payment events.
-Avoid: DynamoDB`, accountId);
+Avoid: DynamoDB`);
 
   // After an incident they switch to PostgreSQL and supersede the first decision.
   const second = await createIssue(projectKey, typeId, "Post-incident: double-charged refunds", "Two refunds were applied twice because writes across accounts were not atomic.");
@@ -118,7 +117,6 @@ Avoid: DynamoDB`, accountId);
     `Decision: Use PostgreSQL for all payment data. Transfers between accounts must be atomic.
 Avoid: MongoDB, DynamoDB
 Supersedes: ${d1.id}`,
-    accountId,
   );
 
   // Weeks later, someone who missed the incident proposes the old approach again.

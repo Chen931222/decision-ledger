@@ -53,7 +53,7 @@ resolver.define("listProjects", async () => listProjects());
 
 resolver.define("loadDemo", async ({ payload, context }) => {
   try {
-    return await loadDemo(payload?.projectKey, context.accountId);
+    return await loadDemo(payload?.projectKey);
   } catch (err) {
     // When the user has not yet granted the app access to act as them, Forge raises an
     // authentication error and shows an "Allow access" prompt, but only if the error propagates.

@@ -64,6 +64,9 @@ export async function allRows() {
  * previous hash; the loser retries on the new tail.
  */
 export async function append(entry) {
+  // No personal data: who wrote a decision is visible on its source comment in Jira, so the ledger
+  // does not keep account ids. Rows are append-only and could never honour a deletion request.
+  entry = { ...entry, author: "" };
   for (let attempt = 0; attempt < 3; attempt++) {
     const rows = await allRows();
     const last = rows[rows.length - 1];

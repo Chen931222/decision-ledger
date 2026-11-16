@@ -70,7 +70,6 @@ export async function onComment(event) {
     supersedes: parsed.supersedes,
     sourceIssue: issueKey,
     sourceComment: String(commentId),
-    author: comment.author?.accountId ?? "unknown",
     createdAt: comment.created ?? new Date().toISOString(),
   });
   if (!row) return; // already recorded
