@@ -45,15 +45,23 @@ export async function checkProposal(payload) {
   const projectKey = String(payload?.projectKey ?? "").toUpperCase().trim();
   const proposal = String(payload?.proposal ?? "");
   if (!projectKey || !proposal) return { error: "Give a project key and a short description of the proposal." };
+  // The user must be able to open the project at all; otherwise free-text proposals could be used
+  // to probe which words a hidden project's decisions avoid.
+  const project = await api.asUser().requestJira(route`/rest/api/3/project/${projectKey}`, { headers: { Accept: "application/json" } });
+  if (!project.ok) return { error: `No project ${projectKey} that you can open.` };
+
   const rows = await allRows();
-  const hits = conflicts(rows, { key: "(proposal)", projectKey, text: proposal });
-  const visible = await Promise.all(hits.map(({ decision }) => canView(decision.sourceIssue)));
-  const shown = hits.filter((_, i) => visible[i]);
+  // Only decisions whose source work item the user can open take part, so neither the matches
+  // nor the counts reveal anything about work items hidden from them.
+  const inProject = inForce(rows).filter((r) => r.projectKey === projectKey);
+  const visible = await Promise.all(inProject.map((d) => canView(d.sourceIssue)));
+  const visibleIds = new Set(inProject.filter((_, i) => visible[i]).map((d) => d.id));
+  const usable = rows.filter((r) => r.projectKey !== projectKey || visibleIds.has(r.id) || !inProject.some((d) => d.id === r.id));
+  const hits = conflicts(usable, { key: "(proposal)", projectKey, text: proposal }).filter(({ decision }) => visibleIds.has(decision.id));
   return {
     projectKey,
-    decisionsInForce: inForce(rows).filter((r) => r.projectKey === projectKey).length,
-    conflicts: shown.map(({ decision, term }) => ({ ...describe(rows, decision), matchedTerm: term })),
-    hiddenConflicts: hits.length - shown.length,
+    decisionsInForce: visibleIds.size,
+    conflicts: hits.map(({ decision, term }) => ({ ...describe(rows, decision), matchedTerm: term })),
     note: "Conflicts are found by matching the decisions' Avoid terms, by code. A proposal can still go against the spirit of a decision without using those words.",
   };
 }
