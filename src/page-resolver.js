@@ -13,12 +13,16 @@ import { listProjects, loadDemo } from "./demo.js";
 
 const resolver = new Resolver();
 
-/** Projects the viewer can browse, checked as the viewer and cached per request. */
-async function visibleProjects(keys) {
+/**
+ * Work items the viewer can open, checked as the viewer, once per work item. Checked per item and
+ * not per project because Jira issue security can hide single work items inside a project the
+ * viewer can otherwise browse.
+ */
+async function visibleIssues(keys) {
   const out = new Set();
   await Promise.all(
     [...new Set(keys)].map(async (key) => {
-      const res = await api.asUser().requestJira(route`/rest/api/3/project/${key}`, { headers: { Accept: "application/json" } });
+      const res = await api.asUser().requestJira(route`/rest/api/3/issue/${key}?fields=summary`, { headers: { Accept: "application/json" } });
       if (res.ok) out.add(key);
     }),
   );
@@ -27,9 +31,9 @@ async function visibleProjects(keys) {
 
 resolver.define("getLedger", async () => {
   const rows = await allRows();
-  const visible = await visibleProjects(rows.map((r) => r.projectKey));
+  const visible = await visibleIssues(rows.map((r) => r.sourceIssue));
   const shown = rows
-    .filter((r) => visible.has(r.projectKey))
+    .filter((r) => visible.has(r.sourceIssue))
     .map((r) => ({
       id: r.id,
       projectKey: r.projectKey,

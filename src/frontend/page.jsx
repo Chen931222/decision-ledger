@@ -103,7 +103,7 @@ const App = () => {
             {data.chain.ok
               ? `Ledger intact: ${data.chain.count} record${data.chain.count === 1 ? "" : "s"}, hash chain verified.`
               : `Ledger check failed at ${data.chain.brokenAt}: ${data.chain.reason}.`}
-            {data.hidden ? ` ${data.hidden} record${data.hidden === 1 ? " is" : "s are"} in projects you cannot open.` : ""}
+            {data.hidden ? ` ${data.hidden} record${data.hidden === 1 ? " comes" : "s come"} from work items you cannot open.` : ""}
           </Text>
           <DynamicTable head={head} rows={rowsFor(data.rows)} emptyView="No decisions yet. Comment &quot;Decision: …&quot; on a work item, or load the demo." />
         </Stack>
